@@ -1,15 +1,25 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import MovieApi from "./apis/movie/movieApi";
 import "./App.css";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import styled from "@emotion/styled";
 
 function App() {
   const lastMovieItemRef = useRef(null);
 
+  const menuList = [
+    { title: "현재 상영작", path: "now_playing" },
+    { title: "인기 영화", path: "popular" },
+    { title: "평점 높은 영화", path: "top_rated" },
+    { title: "개봉 예정작", path: "upcoming" },
+  ];
+
+  const [category, setCategory] = useState("upcoming");
+
   const { data, fetchNextPage, isLoading } = useInfiniteQuery({
-    queryKey: ["movieList", "upcoming"],
+    queryKey: ["movieList", category],
     queryFn: ({ pageParam = 1 }) =>
-      MovieApi.getUpComingMovieList({ page: pageParam }),
+      MovieApi.getUpComingMovieList({ category: category, page: pageParam }),
     getNextPageParam: (lastPage, allPage) => lastPage + 1,
     // allPage.length > lastPage.totalPage && lastPage.page + 1,
   });
@@ -46,11 +56,27 @@ function App() {
     [fetchNextPage, isLoading]
   );
 
-  console.log(movieList);
+  const handleClickMenu = (menu) => {
+    setCategory(menu);
+  };
+
+  console.log(category);
   return (
-    <>
-    <div>메뉴 리스트</div>
-    <div>Movie</div>
+    <MovieTrackerLayout>
+      <TopNavBarLayout>
+        <TopNavBarMenuContainer>
+          <TopNavBarLogoText>MovieTracker</TopNavBarLogoText>
+          {menuList.map((menu, index) => (
+            <TopNavBarMenuItem
+              key={index}
+              onClick={() => handleClickMenu(menu.path)}
+            >
+              {menu.title}
+            </TopNavBarMenuItem>
+          ))}
+        </TopNavBarMenuContainer>
+        <TopNavBarSearchInput />
+      </TopNavBarLayout>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
         {movieList.map((movie) => (
           <div key={movie.id}>
@@ -60,8 +86,41 @@ function App() {
         ))}
         <div ref={lastMovieItemRef}></div>
       </div>
-    </>
+    </MovieTrackerLayout>
   );
 }
 
 export default App;
+
+const MovieTrackerLayout = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+`;
+
+const TopNavBarLayout = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+
+const TopNavBarMenuContainer = styled.div`
+  display: flex;
+`;
+
+const TopNavBarLogoText = styled.span`
+  font-weight: 700;
+  font-size: 48px;
+  color: yellow;
+`;
+
+const TopNavBarMenuItem = styled.button`
+  width: 120px;
+  padding: 8px 4px;
+  background-color: transparent;
+`;
+
+const TopNavBarSearchInput = styled.input`
+  width: 100%;
+`;

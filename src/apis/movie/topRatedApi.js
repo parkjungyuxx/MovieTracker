@@ -1,8 +1,8 @@
 import AxiosInstance from "../core";
 
 const MovieApi = {
-  async getUpComingMovieList({ category = "upcoming", page = 1 }) {
-    const response = await AxiosInstance.get(`/movie/${category}`, {
+  async getUpComingMovieList({ page = 1 }) {
+    const response = await AxiosInstance.get("/movie/top_rated", {
       params: {
         page,
         language: "ko-KR",
