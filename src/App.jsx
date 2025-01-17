@@ -20,7 +20,7 @@ function App() {
     queryKey: ["movieList", category],
     queryFn: ({ pageParam = 1 }) =>
       MovieApi.getUpComingMovieList({ category: category, page: pageParam }),
-    getNextPageParam: (lastPage, allPage) => lastPage + 1,
+    getNextPageParam: (lastPage, allPage) => lastPage.page + 1,
     // allPage.length > lastPage.totalPage && lastPage.page + 1,
   });
 
@@ -77,15 +77,17 @@ function App() {
         </TopNavBarMenuContainer>
         <TopNavBarSearchInput />
       </TopNavBarLayout>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+      <MovieContentWrapper>
         {movieList.map((movie) => (
-          <div key={movie.id}>
-            <img src={"https://image.tmdb.org/t/p/w200" + movie.poster_path} />
-            <p>{movie.title}</p>
-          </div>
+          <MovieContentItem key={movie.id}>
+            <MovieContentItemImg
+              src={"https://image.tmdb.org/t/p/w200" + movie.poster_path}
+            />
+            <MovieContentItemTitle>{movie.title}</MovieContentItemTitle>
+          </MovieContentItem>
         ))}
         <div ref={lastMovieItemRef}></div>
-      </div>
+      </MovieContentWrapper>
     </MovieTrackerLayout>
   );
 }
@@ -123,4 +125,30 @@ const TopNavBarMenuItem = styled.button`
 
 const TopNavBarSearchInput = styled.input`
   width: 100%;
+`;
+
+const MovieContentWrapper = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  box-sizing: border-box;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+`;
+
+const MovieContentItem = styled.div`
+  border-radius: 16px;
+  max-width: 200px;
+`;
+
+const MovieContentItemImg = styled.img`
+  border-radius: 16px;
+`;
+
+const MovieContentItemTitle = styled.p`
+  width: 100%;
+  height: 24px;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  overflow: hidden;
 `;
