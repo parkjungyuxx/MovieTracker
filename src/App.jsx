@@ -7,8 +7,8 @@ import { useNavigate, useParams } from "react-router-dom";
 
 function App() {
   const lastMovieItemRef = useRef(null);
-  const params = useParams();
   const navigate = useNavigate();
+  const params = useParams();
 
   const menuList = [
     { title: "현재 상영작", path: "now_playing" },
@@ -18,13 +18,14 @@ function App() {
   ];
 
   const [category, setCategory] = useState("upcoming");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
 
   const { data, fetchNextPage, isLoading } = useInfiniteQuery({
     queryKey: ["movieList", category],
     queryFn: ({ pageParam = 1 }) =>
       MovieApi.getUpComingMovieList({ category: category, page: pageParam }),
-    getNextPageParam: (lastPage, allPage) => lastPage.page + 1,
-    // allPage.length > lastPage.totalPage && lastPage.page + 1,
+    getNextPageParam: (lastPage, allPages) => lastPage.page + 1,
   });
 
   const movieList = useMemo(() => {
@@ -32,39 +33,68 @@ function App() {
     return data.pages.flatMap((page) => page.results);
   }, [data]);
 
-  useEffect(
-    function onObserve() {
-      const el = lastMovieItemRef.current;
-      if (!el) return;
-      const observer = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          if (entry.isIntersecting && !isLoading) {
-            fetchNextPage();
-          }
-        },
-        {
-          rootMargin: "0px",
-          threshold: 1.0,
+  useEffect(() => {
+    const el = lastMovieItemRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && !isLoading) {
+          fetchNextPage();
         }
-      );
+      },
+      {
+        rootMargin: "0px",
+        threshold: 1.0,
+      }
+    );
 
-      observer.observe(el);
+    observer.observe(el);
 
-      return () => {
-        if (!el) return;
-        observer.unobserve(el);
-      };
-    },
-    [fetchNextPage, isLoading]
-  );
+    return () => {
+      if (el) observer.unobserve(el);
+    };
+  }, [fetchNextPage, isLoading, searchResults]);
+
+  useEffect(() => {
+    if (params.category) {
+      setCategory(params.category); // URL에서 카테고리 읽어서 설정
+    }
+  }, [params]);
 
   const handleClickMenu = (menu) => {
     setCategory(menu);
     navigate(`/${menu}`);
+    setSearchResults([]);
   };
 
-  console.log(category);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!searchInput.trim()) return;
+
+    try {
+      const keywordResponse = await MovieApi.searchKeyword({
+        query: searchInput,
+      });
+      if (keywordResponse.results.length > 0) {
+        const keywordId = keywordResponse.results[0].id;
+        const movieResponse = await MovieApi.getMoviesByKeyword({
+          keywordId,
+          page: 1,
+        });
+        setSearchResults(movieResponse.results);
+      } else {
+        setSearchResults([]);
+        alert("해당 키워드 영화가 없음");
+      }
+    } catch (error) {
+      alert(error);
+    }
+  };
+
+  const display = searchResults.length > 0 ? searchResults : movieList;
+
   return (
     <MovieTrackerLayout>
       <TopNavBarLayout>
@@ -79,17 +109,33 @@ function App() {
             </TopNavBarMenuItem>
           ))}
         </TopNavBarMenuContainer>
-        <TopNavBarSearchInput />
+        <form onSubmit={handleSubmit}>
+          <TopNavBarSearchInput
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="영화 검색하쇼"
+          />
+          <SearchButton type="submit">Search</SearchButton>
+        </form>
       </TopNavBarLayout>
       <MovieContentWrapper>
-        {movieList.map((movie) => (
-          <MovieContentItem key={movie.id}>
-            <MovieContentItemImg
-              src={"https://image.tmdb.org/t/p/w200" + movie.poster_path}
-            />
-            <MovieContentItemTitle>{movie.title}</MovieContentItemTitle>
-          </MovieContentItem>
-        ))}
+        {display.length > 0 ? (
+          display.map((movie) => (
+            <MovieContentItem key={movie.id}>
+              <MovieContentItemImg
+                src={"https://image.tmdb.org/t/p/w200" + movie.poster_path}
+                alt={movie.title}
+              />
+              <MovieContentItemTitle>{movie.title}</MovieContentItemTitle>
+            </MovieContentItem>
+          ))
+        ) : (
+          <NoResultText>
+            {searchResults.length > 0
+              ? "해당 키워드 영화가 없음."
+              : "카테고리에 영화가 없음"}
+          </NoResultText>
+        )}
         <div ref={lastMovieItemRef}></div>
       </MovieContentWrapper>
     </MovieTrackerLayout>
@@ -128,16 +174,25 @@ const TopNavBarMenuItem = styled.button`
 `;
 
 const TopNavBarSearchInput = styled.input`
-  width: 100%;
+  width: 80%;
+  padding: 8px;
+  margin-right: 8px;
+`;
+
+const SearchButton = styled.button`
+  padding: 8px;
+  background-color: blue;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 `;
 
 const MovieContentWrapper = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  box-sizing: border-box;
-  justify-content: center;
-  align-items: center;
   gap: 24px;
+  padding: 24px;
 `;
 
 const MovieContentItem = styled.div`
@@ -150,9 +205,14 @@ const MovieContentItemImg = styled.img`
 `;
 
 const MovieContentItemTitle = styled.p`
-  width: 100%;
-  height: 24px;
   font-size: 16px;
   text-overflow: ellipsis;
   overflow: hidden;
+`;
+
+const NoResultText = styled.div`
+  grid-column: span 4;
+  text-align: center;
+  font-size: 18px;
+  color: gray;
 `;

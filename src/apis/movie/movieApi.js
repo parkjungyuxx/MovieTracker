@@ -10,6 +10,26 @@ const MovieApi = {
     });
     return response.data;
   },
+
+  async searchKeyword({ query }) {
+    const response = await AxiosInstance.get(`/search/keyword`, {
+      params: {
+        query,
+        language: "ko-KR",
+      },
+    });
+    return response.data;
+  },
+  async getMoviesByKeyword({ keywordId, page = 1 }) {
+    const response = await AxiosInstance.get(`/keyword/${keywordId}/movies`, {
+      params: {
+        include_adult: false, 
+        language: "ko-KR", 
+        page,
+      },
+    });
+    return response.data;
+  },
 };
 
 export default MovieApi;
