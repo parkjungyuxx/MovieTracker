@@ -3,9 +3,12 @@ import MovieApi from "./apis/movie/movieApi";
 import "./App.css";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import styled from "@emotion/styled";
+import { useNavigate, useParams } from "react-router-dom";
 
 function App() {
   const lastMovieItemRef = useRef(null);
+  const params = useParams();
+  const navigate = useNavigate();
 
   const menuList = [
     { title: "현재 상영작", path: "now_playing" },
@@ -58,6 +61,7 @@ function App() {
 
   const handleClickMenu = (menu) => {
     setCategory(menu);
+    navigate(`/${menu}`);
   };
 
   console.log(category);
