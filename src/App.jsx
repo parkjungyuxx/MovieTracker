@@ -59,7 +59,7 @@ function App() {
 
   useEffect(() => {
     if (params.category) {
-      setCategory(params.category); // URL에서 카테고리 읽어서 설정
+      setCategory(params.category); 
     }
   }, [params]);
 
