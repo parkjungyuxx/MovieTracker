@@ -59,7 +59,7 @@ function App() {
 
   useEffect(() => {
     if (params.category) {
-      setCategory(params.category); 
+      setCategory(params.category);
     }
   }, [params]);
 
@@ -71,14 +71,13 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!searchInput.trim()) return;
 
     try {
-      const keywordResponse = await MovieApi.searchKeyword({
+      const response = await MovieApi.searchKeyword({
         query: searchInput,
       });
-      if (keywordResponse.results.length > 0) {
-        const keywordId = keywordResponse.results[0].id;
+      if (response.results.length > 0) {
+        const keywordId = response.results[0].id;
         const movieResponse = await MovieApi.getMoviesByKeyword({
           keywordId,
           page: 1,
