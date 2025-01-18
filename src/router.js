@@ -7,7 +7,7 @@ export const router = createBrowserRouter([
     Component: App,
     children: [
       {
-        path: ":catecory",
+        path: ":category",
         Component: App,
       },
     ],

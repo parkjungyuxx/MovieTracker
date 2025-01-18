@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import MovieApi from "./apis/movie/movieApi";
-import "./App.css";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import styled from "@emotion/styled";
 import { useNavigate, useParams } from "react-router-dom";
@@ -19,19 +18,38 @@ function App() {
 
   const [category, setCategory] = useState("upcoming");
   const [searchInput, setSearchInput] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
 
-  const { data, fetchNextPage, isLoading } = useInfiniteQuery({
+  const {
+    data: movieData,
+    fetchNextPage: fetchMovies,
+    isLoading: isLoadingMovies,
+  } = useInfiniteQuery({
     queryKey: ["movieList", category],
     queryFn: ({ pageParam = 1 }) =>
-      MovieApi.getUpComingMovieList({ category: category, page: pageParam }),
-    getNextPageParam: (lastPage, allPages) => lastPage.page + 1,
+      MovieApi.getUpComingMovieList({ category, page: pageParam }),
+    getNextPageParam: (lastPage) => lastPage.page + 1,
+  });
+
+  const {
+    data: searchData,
+    fetchNextPage: fetchSearchResults,
+    isLoading: isLoadingSearch,
+  } = useInfiniteQuery({
+    queryKey: ["searchResults", searchInput],
+    queryFn: ({ pageParam = 1 }) =>
+      MovieApi.searchKeyword({ query: searchInput, page: pageParam }),
+    getNextPageParam: (lastPage) => lastPage.page + 1,
   });
 
   const movieList = useMemo(() => {
-    if (!data) return [];
-    return data.pages.flatMap((page) => page.results);
-  }, [data]);
+    if (!movieData) return [];
+    return movieData.pages.flatMap((page) => page.results);
+  }, [movieData]);
+
+  const searchResults = useMemo(() => {
+    if (!searchData) return [];
+    return searchData.pages.flatMap((page) => page.results);
+  }, [searchData]);
 
   useEffect(() => {
     const el = lastMovieItemRef.current;
@@ -40,14 +58,15 @@ function App() {
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (entry.isIntersecting && !isLoading) {
-          fetchNextPage();
+        if (entry.isIntersecting) {
+          if (searchResults.length > 0) {
+            fetchSearchResults();
+          } else {
+            fetchMovies();
+          }
         }
       },
-      {
-        rootMargin: "0px",
-        threshold: 1.0,
-      }
+      { rootMargin: "0px", threshold: 1.0 }
     );
 
     observer.observe(el);
@@ -55,7 +74,7 @@ function App() {
     return () => {
       if (el) observer.unobserve(el);
     };
-  }, [fetchNextPage, isLoading, searchResults]);
+  }, [fetchMovies, fetchSearchResults, searchResults]);
 
   useEffect(() => {
     if (params.category) {
@@ -65,30 +84,14 @@ function App() {
 
   const handleClickMenu = (menu) => {
     setCategory(menu);
+    setSearchInput("");
     navigate(`/${menu}`);
-    setSearchResults([]);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    try {
-      const response = await MovieApi.searchKeyword({
-        query: searchInput,
-      });
-      if (response.results.length > 0) {
-        const keywordId = response.results[0].id;
-        const movieResponse = await MovieApi.getMoviesByKeyword({
-          keywordId,
-          page: 1,
-        });
-        setSearchResults(movieResponse.results);
-      } else {
-        setSearchResults([]);
-        alert("해당 키워드 영화가 없음");
-      }
-    } catch (error) {
-      alert(error);
+    if (searchInput) {
+      setSearchInput(searchInput);
     }
   };
 
@@ -112,7 +115,7 @@ function App() {
           <TopNavBarSearchInput
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="영화 검색하쇼"
+            placeholder="영화 검색"
           />
           <SearchButton type="submit">Search</SearchButton>
         </form>
@@ -123,6 +126,7 @@ function App() {
             <MovieContentItem key={movie.id}>
               <MovieContentItemImg
                 src={"https://image.tmdb.org/t/p/w200" + movie.poster_path}
+                alt={movie.title}
               />
               <MovieContentItemTitle>{movie.title}</MovieContentItemTitle>
             </MovieContentItem>
