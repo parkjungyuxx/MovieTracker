@@ -123,7 +123,6 @@ function App() {
             <MovieContentItem key={movie.id}>
               <MovieContentItemImg
                 src={"https://image.tmdb.org/t/p/w200" + movie.poster_path}
-                alt={movie.title}
               />
               <MovieContentItemTitle>{movie.title}</MovieContentItemTitle>
             </MovieContentItem>
@@ -173,9 +172,8 @@ const TopNavBarMenuItem = styled.button`
 `;
 
 const TopNavBarSearchInput = styled.input`
-  width: 80%;
+  width: 900px;
   padding: 8px;
-  margin-right: 8px;
 `;
 
 const SearchButton = styled.button`
@@ -210,7 +208,6 @@ const MovieContentItemTitle = styled.p`
 `;
 
 const NoResultText = styled.div`
-  grid-column: span 4;
   text-align: center;
   font-size: 18px;
   color: gray;
