@@ -90,8 +90,8 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (searchInput) {
-      setSearchInput(searchInput);
+    if (searchInput.trim()) {
+      setSearchInput(searchInput.trim());
     }
   };
 
